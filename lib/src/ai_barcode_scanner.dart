@@ -9,42 +9,126 @@ import 'overlay.dart';
 
 /// Barcode scanner widget
 class AiBarcodeScanner extends StatefulWidget {
+  /// Fit to screen
   final BoxFit fit;
+
+  /// Barcode controller (optional)
   final MobileScannerController? controller;
+
+  /// You can use your own custom overlay builder
+  /// to build your own overlay
+  /// This will override the default custom overlay
   final Widget? Function(BuildContext, bool?, MobileScannerController)? customOverlayBuilder;
+
+  /// Overlay border color (default: white)
   final Color? borderColor;
+
+  /// Overlay border width (default: 10)
   final double borderWidth;
+
+  /// Overlay color
   final Color overlayColor;
+
+  /// Overlay border radius (default: 10)
   final double borderRadius;
+
+  /// Overlay border length (default: 30)
   final double borderLength;
+
+  /// Overlay cut out width (optional)
   final double? cutOutWidth;
+
+  /// Overlay cut out height (optional)
   final double? cutOutHeight;
+
+  /// Overlay cut out offset (default: 0)
   final double cutOutBottomOffset;
+
+  /// Overlay cut out size (default: 300)
   final double cutOutSize;
+
+  /// Show error or not (default: true)
   final bool showError;
+
+  /// Error color (default: red)
   final Color errorColor;
+
+  /// Show success or not (default: true)
   final bool showSuccess;
+
+  /// Success color (default: green)
   final Color successColor;
+
+  /// The function that builds an error widget when the scanner
+  /// could not be started.
+  ///
+  /// If this is null, defaults to a black [ColoredBox]
+  /// with a centered white [Icons.error] icon.
   final Widget Function(BuildContext, MobileScannerException, Widget?)? errorBuilder;
+
+  /// The function that builds a placeholder widget when the scanner
+  /// is not yet displaying its camera preview.
+  ///
+  /// If this is null, a black [ColoredBox] is used as placeholder.
   final Widget Function(BuildContext, Widget?)? placeholderBuilder;
+
+  /// Called when this object is removed from the tree permanently.
   final void Function()? onDispose;
+
+  /// AppBar widget
+  /// you can use this to add appBar to the scanner screen
   final PreferredSizeWidget? Function(BuildContext context, MobileScannerController controller)? appBarBuilder;
+
+  /// The builder for the bottom sheet.
+  /// This is displayed below the camera preview.
   final Widget? Function(BuildContext context, MobileScannerController controller)? bottomSheetBuilder;
+
+  /// The builder for the overlay above the camera preview.
   final LayoutWidgetBuilder? overlayBuilder;
+
+  /// The scan window rectangle for the barcode scanner.
   final Rect? scanWindow;
-  final void Function(BarcodeCapture)? onDetect;
-  final bool Function(BarcodeCapture)? validator;
-  final void Function(String?)? onImagePick;
+
+  /// The threshold for updates to the [scanWindow].
   final double scanWindowUpdateThreshold;
+
+  /// Validator function to check if barcode is valid or not
+  final bool Function(BarcodeCapture)? validator;
+
+  final void Function(String?)? onImagePick;
+
+  /// Title for the draggable sheet (default: 'Scan any QR code')
   final String sheetTitle;
+
+  /// Child widget for the draggable sheet (default: SizedBox.shrink())
   final Widget sheetChild;
+
+  /// Hide drag handler of the draggable sheet (default: false)
   final bool hideSheetDragHandler;
+
+  /// Hide title of the draggable sheet (default: false)
   final bool hideSheetTitle;
+
+  /// Hide gallery button (default: false)
+  /// This will hide the gallery button at the bottom of the screen
   final bool hideGalleryButton;
+
+  /// Hide gallery icon (default: false)
+  /// This will hide the gallery icon in the app bar
   final bool hideGalleryIcon;
+
+  /// Extend body behind app bar (default: true)
   final bool extendBodyBehindAppBar;
+
+  /// Upload from gallery button alignment
   final AlignmentGeometry? galleryButtonAlignment;
+
+  /// actions for the app bar (optional)
+  /// Camera switch and torch toggle buttons are added by default
+  /// You can add more actions to the app bar using this parameter
   final List<Widget>? actions;
+
+  /// Lock orientation to portrait (default: true)
   final bool setPortraitOrientation;
 
   const AiBarcodeScanner({
