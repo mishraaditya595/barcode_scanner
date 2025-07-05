@@ -18,8 +18,7 @@ class AiBarcodeScanner extends StatefulWidget {
   /// You can use your own custom overlay builder
   /// to build your own overlay
   /// This will override the default custom overlay
-  final Widget? Function(BuildContext, bool?, MobileScannerController)?
-      customOverlayBuilder;
+  final Widget? Function(BuildContext, bool?, MobileScannerController)? customOverlayBuilder;
 
   /// Overlay border color (default: white)
   final Color? borderColor;
@@ -65,8 +64,7 @@ class AiBarcodeScanner extends StatefulWidget {
   ///
   /// If this is null, defaults to a black [ColoredBox]
   /// with a centered white [Icons.error] icon.
-  final Widget Function(BuildContext, MobileScannerException, Widget?)?
-      errorBuilder;
+  final Widget Function(BuildContext, MobileScannerException, Widget?)? errorBuilder;
 
   /// The function that builds a placeholder widget when the scanner
   /// is not yet displaying its camera preview.
@@ -79,87 +77,19 @@ class AiBarcodeScanner extends StatefulWidget {
 
   /// AppBar widget
   /// you can use this to add appBar to the scanner screen
-  ///
-  final PreferredSizeWidget? Function(
-      BuildContext context, MobileScannerController controller)? appBarBuilder;
+  final PreferredSizeWidget? Function(BuildContext context, MobileScannerController controller)? appBarBuilder;
 
   /// The builder for the bottom sheet.
   /// This is displayed below the camera preview.
-  final Widget? Function(
-          BuildContext context, MobileScannerController controller)?
-      bottomSheetBuilder;
+  final Widget? Function(BuildContext context, MobileScannerController controller)? bottomSheetBuilder;
 
   /// The builder for the overlay above the camera preview.
-  ///
-  /// The resulting widget can be combined with the [scanWindow] rectangle
-  /// to create a cutout for the camera preview.
-  ///
-  /// The [BoxConstraints] for this builder
-  /// are the same constraints that are used to compute the effective [scanWindow].
-  ///
-  /// The overlay is only displayed when the camera preview is visible.
   final LayoutWidgetBuilder? overlayBuilder;
 
   /// The scan window rectangle for the barcode scanner.
-  ///
-  /// If this is not null, the barcode scanner will only scan barcodes
-  /// which intersect this rectangle.
-  ///
-  /// This rectangle is relative to the layout size
-  /// of the *camera preview widget* in the widget tree,
-  /// rather than the actual size of the camera preview output.
-  /// This is because the size of the camera preview widget
-  /// might not be the same as the size of the camera output.
-  ///
-  /// For example, the applied [fit] has an effect on the size of the camera preview widget,
-  /// while the camera preview size remains the same.
-  ///
-  /// The following example shows a scan window that is centered,
-  /// fills half the height and one third of the width of the layout:
-  ///
-  /// ```dart
-  /// LayoutBuider(
-  ///   builder: (BuildContext context, BoxConstraints constraints) {
-  ///     final Size layoutSize = constraints.biggest;
-  ///
-  ///     final double scanWindowWidth = layoutSize.width / 3;
-  ///     final double scanWindowHeight = layoutSize.height / 2;
-  ///
-  ///     final Rect scanWindow = Rect.fromCenter(
-  ///       center: layoutSize.center(Offset.zero),
-  ///       width: scanWindowWidth,
-  ///       height: scanWindowHeight,
-  ///     );
-  ///   }
-  /// );
-  /// ```
   final Rect? scanWindow;
 
   /// The threshold for updates to the [scanWindow].
-  ///
-  /// If the [scanWindow] would be updated,
-  /// due to new layout constraints for the scanner,
-  /// and the width or height of the new scan window have not changed by this threshold,
-  /// then the scan window is not updated.
-  ///
-  /// It is recommended to set this threshold
-  /// if scan window updates cause performance issues.
-  ///
-  /// Defaults to no threshold for scan window updates.
-  ///
-  final void Function(BarcodeCapture)? onDetect;
-
-  /// The threshold for updates to the [scanWindow].
-  ///
-  /// If the [scanWindow] would be updated,
-  /// due to new layout constraints for the scanner,
-  /// and the width or height of the new scan window have not changed by this threshold,
-  /// then the scan window is not updated.
-  ///
-  /// It is recommended to set this threshold
-  /// if scan window updates cause performance issues.
-  ///
-  /// Defaults to no threshold for scan window updates.
   final double scanWindowUpdateThreshold;
 
   /// Validator function to check if barcode is valid or not
@@ -191,7 +121,6 @@ class AiBarcodeScanner extends StatefulWidget {
   final bool extendBodyBehindAppBar;
 
   /// Upload from gallery button alignment
-  /// default: bottom center, center, 0.75
   final AlignmentGeometry? galleryButtonAlignment;
 
   /// actions for the app bar (optional)
@@ -199,7 +128,9 @@ class AiBarcodeScanner extends StatefulWidget {
   /// You can add more actions to the app bar using this parameter
   final List<Widget>? actions;
 
+  /// Lock orientation to portrait (default: true)
   final bool setPortraitOrientation;
+
   const AiBarcodeScanner({
     super.key,
     this.fit = BoxFit.cover,
@@ -232,12 +163,12 @@ class AiBarcodeScanner extends StatefulWidget {
     this.sheetChild = const SizedBox.shrink(),
     this.hideSheetDragHandler = false,
     this.hideSheetTitle = false,
-    this.galleryButtonAlignment,
-    this.actions,
     this.hideGalleryButton = false,
     this.hideGalleryIcon = true,
     this.bottomSheetBuilder,
     this.extendBodyBehindAppBar = true,
+    this.galleryButtonAlignment,
+    this.actions,
     this.setPortraitOrientation = true,
   });
 
@@ -246,16 +177,18 @@ class AiBarcodeScanner extends StatefulWidget {
 }
 
 class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
-  /// bool to check if barcode is valid or not
   final ValueNotifier<bool?> _isSuccess = ValueNotifier<bool?>(null);
-
-  /// Scanner controller
   late MobileScannerController controller;
-
   double _cutOutBottomOffset = 0;
 
   @override
   void initState() {
+    if (widget.setPortraitOrientation) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
     controller = widget.controller ?? MobileScannerController();
     _cutOutBottomOffset = widget.cutOutBottomOffset;
     super.initState();
@@ -263,20 +196,18 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
 
   @override
   void dispose() {
-    // controller.dispose();
-    // widget.controller?.dispose();
+    if (widget.controller == null) {
+      controller.dispose();
+    }
     widget.onDispose?.call();
+    if (widget.setPortraitOrientation) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.setPortraitOrientation) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]);
-    }
     return Scaffold(
       appBar: widget.appBarBuilder?.call(context, controller) ??
           AppBar(
@@ -286,17 +217,16 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.cameraswitch_rounded),
-                onPressed: controller.switchCamera,
+                onPressed: () => controller.switchCamera(),
               ),
-              
               IconButton(
                 icon: controller.value.torchState == TorchState.on
                     ? const Icon(Icons.flashlight_off_rounded)
                     : const Icon(Icons.flashlight_on_rounded),
-                onPressed: (){
+                onPressed: () {
                   controller.toggleTorch();
                   setState(() {});
-                }
+                },
               ),
               if (!widget.hideGalleryIcon)
                 GalleryButton.icon(
@@ -323,8 +253,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
             onDetect: onDetect,
             controller: controller,
             fit: widget.fit,
-            errorBuilder:
-                widget.errorBuilder ?? (_, error, ___) => const ErrorBuilder(),
+            errorBuilder: widget.errorBuilder ?? (_, __, ___) => const ErrorBuilder(),
             placeholderBuilder: widget.placeholderBuilder,
             scanWindow: widget.scanWindow,
             key: widget.key,
@@ -334,30 +263,27 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
           ValueListenableBuilder<bool?>(
             valueListenable: _isSuccess,
             builder: (context, isSuccess, __) {
-              return widget.customOverlayBuilder
-                      ?.call(context, isSuccess, controller) ??
+              return widget.customOverlayBuilder?.call(context, isSuccess, controller) ??
                   Container(
                     decoration: ShapeDecoration(
                       shape: OverlayShape(
                         borderRadius: widget.borderRadius,
-                        borderColor:
-                            ((isSuccess ?? false) && widget.showSuccess)
-                                ? widget.successColor
-                                : (!(isSuccess ?? true) && widget.showError)
-                                    ? widget.errorColor
-                                    : widget.borderColor ?? Colors.white,
+                        borderColor: ((isSuccess ?? false) && widget.showSuccess)
+                            ? widget.successColor
+                            : (!(isSuccess ?? true) && widget.showError)
+                                ? widget.errorColor
+                                : widget.borderColor ?? Colors.white,
                         borderLength: widget.borderLength,
                         borderWidth: widget.borderWidth,
                         cutOutSize: widget.cutOutSize,
                         cutOutBottomOffset: _cutOutBottomOffset,
                         cutOutWidth: widget.cutOutWidth,
                         cutOutHeight: widget.cutOutHeight,
-                        overlayColor:
-                            ((isSuccess ?? false) && widget.showSuccess)
-                                ? widget.successColor.withOpacity(0.4)
-                                : (!(isSuccess ?? true) && widget.showError)
-                                    ? widget.errorColor.withOpacity(0.4)
-                                    : widget.overlayColor,
+                        overlayColor: ((isSuccess ?? false) && widget.showSuccess)
+                            ? widget.successColor.withOpacity(0.4)
+                            : (!(isSuccess ?? true) && widget.showError)
+                                ? widget.errorColor.withOpacity(0.4)
+                                : widget.overlayColor,
                       ),
                     ),
                   );
@@ -366,11 +292,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
           if (!widget.hideGalleryButton)
             Align(
               alignment: widget.galleryButtonAlignment ??
-                  Alignment.lerp(
-                    Alignment.bottomCenter,
-                    Alignment.center,
-                    0.75,
-                  )!,
+                  Alignment.lerp(Alignment.bottomCenter, Alignment.center, 0.75)!,
               child: GalleryButton(
                 onImagePick: widget.onImagePick,
                 onDetect: widget.onDetect,
@@ -388,11 +310,12 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
     widget.onDetect?.call(barcodes);
     if (widget.validator != null) {
       final isValid = widget.validator!(barcodes);
+      _isSuccess.value = isValid;
       if (!isValid) {
         HapticFeedback.heavyImpact();
+      } else {
+        HapticFeedback.mediumImpact();
       }
-      HapticFeedback.mediumImpact();
-      _isSuccess.value = isValid;
     }
   }
 }
