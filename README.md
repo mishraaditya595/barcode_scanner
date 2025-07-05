@@ -16,6 +16,12 @@
 </tr>
 </table>
 
+## Platform Support
+
+| Android | iOS | macOS | Web | Linux | Windows |
+| ------- | --- | ----- | --- | ----- | ------- |
+| ✔       | ✔   | ✔     | ✔   | :x:   | :x:     |
+
 ## Features Supported
 
 See the example app for detailed implementation information.
@@ -26,12 +32,6 @@ See the example app for detailed implementation information.
 | returnImage            | :heavy_check_mark: | :heavy_check_mark: | :x:   | :x: |
 | scanWindow             | :heavy_check_mark: | :heavy_check_mark: | :x:   | :x: |
 | barcodeOverlay         | :heavy_check_mark: | :heavy_check_mark: | :x:   | :x: |
-
-## Platform Support
-
-| Android | iOS | macOS | Web | Linux | Windows |
-| ------- | --- | ----- | --- | ----- | ------- |
-| ✔       | ✔   | ✔     | ✔   | :x:   | :x:     |
 
 ## Platform specific setup
 
@@ -75,8 +75,8 @@ Ensure that you granted camera permission in XCode -> Signing & Capabilities:
 
 ## Web
 
-As of version 5.0.0 adding the library to the `index.html` is no longer required,
-as the library is automatically loaded on first use.
+As of version 5.0.0 adding the barcode scanning library script to the `index.html` is no longer required,
+as the script is automatically loaded on first use.
 
 ### Providing a mirror for the barcode scanning library
 
@@ -100,16 +100,13 @@ Import `package:ai_barcode_scanner/ai_barcode_scanner.dart`, and use the widget 
 
 If you don't provide a controller, you can't control functions like the torch(flash) or switching camera.
 
-If you don't set allowDuplicates to false, you can get multiple scans in a very short time, causing things like pop() to fire lots of times.
+If you don't set `detectionSpeed: DetectionSpeed.noDuplicates`, you can get multiple scans in a very short time.
 
 ```dart
 import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
 
 /// Simple example of using the barcode scanner.
 AiBarcodeScanner(
-        onScan: (String value) {
-          debugPrint(value);
-        },
         onDetect: (BarcodeCapture barcodeCapture) {
           debugPrint(barcodeCapture);
         },
@@ -120,9 +117,6 @@ AiBarcodeScanner(
         controller: MobileScannerController(
              detectionSpeed: DetectionSpeed.noDuplicates,
            ),
-          onScan: (String value) {
-            debugPrint(value);
-          },
         onDetect: (BarcodeCapture barcodeCapture) {
           debugPrint(barcodeCapture);
         },
@@ -132,16 +126,40 @@ AiBarcodeScanner(
 /// Validator works on the raw string, not the decoded value.
 /// If you want to validate the scanner, use the [validate] parameter.
 AiBarcodeScanner(
-        validate: (String value) {
-          if(value.startsWith('http')) {
-            return true;
-          }
-          return false;
-        },
-          onScan: (String value) {
-            debugPrint(value);
-          },
-      ),
+  onDispose: () {
+    /// This is called when the barcode scanner is disposed.
+    /// You can write your own logic here.
+    debugPrint("Barcode scanner disposed!");
+  },
+  controller: MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  ),
+  onDetect: (BarcodeCapture capture) {
+    /// The row string scanned barcode value
+    final String? scannedValue =
+        capture.barcodes.first.rawValue;
+
+    /// The `Uint8List` image is only available if `returnImage` is set to `true`.
+    final Uint8List? image = capture.image;
+
+    /// row data of the barcode
+    final Object? raw = capture.raw;
+
+    /// List of scanned barcodes if any
+    final List<Barcode> barcodes = capture.barcodes;
+  },
+  validator: (value) {
+    if (value.barcodes.isEmpty) {
+      return false;
+    }
+    if (!(value.barcodes.first.rawValue
+            ?.contains('flutter.dev') ??
+        false)) {
+      return false;
+    }
+    return true;
+  },
+),
 ```
 
 ## Usage ([mobile_scanner](https://pub.dev/packages/mobile_scanner))
@@ -268,8 +286,11 @@ You can use the following properties of the Barcode object.
   /// Barcode controller (optional)
   final MobileScannerController? controller;
 
-  /// Show overlay or not (default: true)
-  final bool showOverlay;
+  /// You can use your own custom overlay builder
+  /// to build your own overlay
+  /// This will override the default custom overlay
+  final Widget? Function(BuildContext, bool?, MobileScannerController)?
+      customOverlayBuilder;
 
   /// Overlay border color (default: white)
   final Color? borderColor;
@@ -330,7 +351,14 @@ You can use the following properties of the Barcode object.
   /// AppBar widget
   /// you can use this to add appBar to the scanner screen
   ///
-  final PreferredSizeWidget? appBar;
+  final PreferredSizeWidget? Function(
+      BuildContext context, MobileScannerController controller)? appBarBuilder;
+
+  /// The builder for the bottom sheet.
+  /// This is displayed below the camera preview.
+  final Widget? Function(
+          BuildContext context, MobileScannerController controller)?
+      bottomSheetBuilder;
 
   /// The builder for the overlay above the camera preview.
   ///
@@ -411,29 +439,36 @@ You can use the following properties of the Barcode object.
   final void Function(String?)? onImagePick;
 
   /// Title for the draggable sheet (default: 'Scan any QR code')
-  final String title;
+  final String sheetTitle;
 
   /// Child widget for the draggable sheet (default: SizedBox.shrink())
-  final Widget child;
+  final Widget sheetChild;
 
   /// Hide drag handler of the draggable sheet (default: false)
-  final bool hideDragHandler;
+  final bool hideSheetDragHandler;
 
   /// Hide title of the draggable sheet (default: false)
-  final bool hideTitle;
+  final bool hideSheetTitle;
+
+  /// Hide gallery button (default: false)
+  /// This will hide the gallery button at the bottom of the screen
+  final bool hideGalleryButton;
+
+  /// Hide gallery icon (default: false)
+  /// This will hide the gallery icon in the app bar
+  final bool hideGalleryIcon;
+
+  /// Extend body behind app bar (default: true)
+  final bool extendBodyBehindAppBar;
 
   /// Upload from gallery button alignment
   /// default: bottom center, center, 0.75
-  final AlignmentGeometry? buttonAlignment;
+  final AlignmentGeometry? galleryButtonAlignment;
 
   /// actions for the app bar (optional)
   /// Camera switch and torch toggle buttons are added by default
   /// You can add more actions to the app bar using this parameter
   final List<Widget>? actions;
-
-  /// Optional function to be called when clicking the back button on the app bar
-  /// If not provided, the default behavior is to pop the current route from the navigator
-  final void Function()? onPop;
 ````
 
 ### Contributing to [ai_barcode_scanner](https://pub.dev/packages/ai_barcode_scanner)
