@@ -1,55 +1,66 @@
-// ignore_for_file: deprecated_member_use
-
+// lib/src/scanner_line_painter.dart
 import 'package:flutter/material.dart';
 
+/// A custom painter for the animated scanning line.
 class ScanningLinePainter extends CustomPainter {
   ScanningLinePainter({
     required this.animationValue,
+    required this.scanWindow,
     this.animationColor = Colors.green,
-    this.lineThickness = 4.0, // Line thickness
+    this.lineThickness = 4.0,
+    // NEW: Added borderRadius to enable clipping.
+    this.borderRadius = 16.0,
   });
 
   final double animationValue;
-  final Color? animationColor;
-  final double lineThickness; // Line thickness
+  final Rect scanWindow;
+  final Color animationColor;
+  final double lineThickness;
+  // NEW: Property to hold the border radius for the clipping mask.
+  final double borderRadius;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final overlayRect = Rect.fromLTWH(
-      size.width * 0.1,
-      size.height * 0.3,
-      size.width * 0.8,
-      size.height * 0.4,
+    // NEW: Create a rounded rectangle path for the scan window area.
+    final clipRRect = RRect.fromRectAndRadius(
+      scanWindow,
+      Radius.circular(borderRadius),
     );
 
-    final roundedRect = RRect.fromRectAndRadius(
-      overlayRect,
-      const Radius.circular(16),
+    // NEW: Apply the clipping path. Any drawing operations that occur
+    // after this will be confined to the area of this rounded rectangle.
+    canvas.clipRRect(clipRRect);
+
+    // Calculate the vertical position of the scanning line within the scan window.
+    final lineY = scanWindow.top + (animationValue * scanWindow.height);
+
+    final lineRect = Rect.fromLTWH(
+      scanWindow.left,
+      lineY - lineThickness / 2,
+      scanWindow.width,
+      lineThickness,
     );
 
-    // Calculate scanning line position
-    final lineY = roundedRect.top + animationValue * roundedRect.height;
-
-    // Draw scanning line
+    // Create a gradient for the scanning line for a "glow" effect.
     final linePaint = Paint()
       ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
         colors: [
-          animationColor!.withValues(alpha: 0),
-          animationColor!.withValues(alpha: 0.5),
-          animationColor!.withValues(alpha: 0),
+          animationColor.withValues(alpha: 0.0),
+          animationColor,
+          animationColor.withValues(alpha: 0.0),
         ],
-      ).createShader(
-        Rect.fromLTWH(roundedRect.left, lineY - lineThickness / 2,
-            roundedRect.width, lineThickness),
-      );
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(lineRect);
 
-    canvas.drawRect(
-      Rect.fromLTWH(roundedRect.left, lineY - lineThickness / 2,
-          roundedRect.width, lineThickness),
-      linePaint,
-    );
+    canvas.drawRect(lineRect, linePaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant ScanningLinePainter oldDelegate) {
+    // UPDATED: Repaint if the animation value or border radius changes.
+    return animationValue != oldDelegate.animationValue ||
+        borderRadius != oldDelegate.borderRadius;
+  }
 }

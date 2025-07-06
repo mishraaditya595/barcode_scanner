@@ -48,7 +48,6 @@ class _HomePageState extends State<HomePage> {
                         /// You can write your own logic here.
                         debugPrint("Barcode scanner disposed!");
                       },
-                      hideGalleryButton: false,
                       controller: MobileScannerController(
                         detectionSpeed: DetectionSpeed.noDuplicates,
                         // formats: [

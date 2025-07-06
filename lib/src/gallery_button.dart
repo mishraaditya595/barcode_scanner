@@ -1,18 +1,24 @@
+// lib/src/gallery_button.dart
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../ai_barcode_scanner.dart';
+// NEW: Using an enum for button type is safer and more readable than a string.
+enum GalleryButtonType { icon, filled }
 
 /// A button that allows the user to pick an image from the gallery
-/// and analyze it for barcodes & QR codes.
+/// and analyze it for barcodes.
 class GalleryButton extends StatelessWidget {
   final void Function(String?)? onImagePick;
   final void Function(BarcodeCapture)? onDetect;
   final bool Function(BarcodeCapture)? validator;
   final MobileScannerController controller;
   final ValueNotifier<bool?> isSuccess;
-  final String child;
+  final GalleryButtonType buttonType;
+  final String text;
 
   const GalleryButton({
     super.key,
@@ -21,7 +27,8 @@ class GalleryButton extends StatelessWidget {
     this.validator,
     required this.controller,
     required this.isSuccess,
-    this.child = 'Gallery',
+    this.buttonType = GalleryButtonType.filled,
+    this.text = 'Upload from gallery',
   });
 
   const GalleryButton.icon({
@@ -31,43 +38,61 @@ class GalleryButton extends StatelessWidget {
     this.validator,
     required this.controller,
     required this.isSuccess,
-    this.child = 'Icon',
-  });
+    this.text = 'Upload from gallery',
+  }) : buttonType = GalleryButtonType.icon;
+
+  /// REFACTORED: The logic for picking and analyzing the image is now cleaner.
+  Future<void> _pickAndAnalyzeImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    onImagePick?.call(image?.path);
+
+    if (image == null) return;
+
+    final BarcodeCapture? barcodes = await controller.analyzeImage(image.path);
+
+    if (barcodes != null) {
+      bool isValid = true;
+      if (validator != null) {
+        isValid = validator!(barcodes);
+      }
+
+      isSuccess.value = isValid;
+      HapticFeedback.lightImpact();
+
+      if (isValid) {
+        onDetect?.call(barcodes);
+        HapticFeedback.mediumImpact();
+      } else {
+        HapticFeedback.heavyImpact();
+      }
+    } else {
+      isSuccess.value = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    Future<void> pickImage() async {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      onImagePick?.call(image?.path);
-      if (image != null) {
-        final barcodes = await controller.analyzeImage(image.path);
-        if (barcodes != null) {
-          HapticFeedback.mediumImpact();
-          onDetect?.call(barcodes);
-          if (validator != null) {
-            final isValid = validator!(barcodes);
-            if (!isValid) {
-              HapticFeedback.heavyImpact();
-            }
-            HapticFeedback.mediumImpact();
-            isSuccess.value = isValid;
-          }
-        }
-      }
-    }
-
-    switch (child) {
-      case 'Icon':
-        return IconButton(
-          icon: const Icon(Icons.image),
-          onPressed: pickImage,
+    switch (buttonType) {
+      case GalleryButtonType.icon:
+        return IconButton.filled(
+          style: IconButton.styleFrom(
+            backgroundColor: CupertinoColors.systemGrey6,
+            foregroundColor: CupertinoColors.darkBackgroundGray,
+          ),
+          icon: const Icon(CupertinoIcons.photo),
+          onPressed: _pickAndAnalyzeImage,
         );
-      default:
+      case GalleryButtonType.filled:
         return FilledButton.icon(
-          onPressed: pickImage,
-          label: const Text("Upload from Gallery"),
-          icon: const Icon(Icons.image_rounded),
+          onPressed: _pickAndAnalyzeImage,
+          label: Text(text),
+          icon: const Icon(CupertinoIcons.photo),
+          style: FilledButton.styleFrom(
+            backgroundColor: CupertinoColors.systemGrey6,
+            foregroundColor: CupertinoColors.darkBackgroundGray,
+          ),
         );
     }
   }

@@ -1,3 +1,6 @@
+// lib/src/ai_barcode_scanner.dart
+import 'dart:async' show Timer;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,95 +11,96 @@ import 'error_builder.dart';
 import 'gallery_button.dart';
 import 'overlay.dart';
 
-/// Barcode scanner widget
+/// The main barcode scanner widget.
 class AiBarcodeScanner extends StatefulWidget {
-  /// Fit to screen
+  /// Defines how the camera preview will be fitted into the layout.
   final BoxFit fit;
 
-  /// Barcode controller (optional)
+  /// The controller for the mobile scanner.
   final MobileScannerController? controller;
 
-  /// You can use your own custom overlay builder
-  /// to build your own overlay
-  /// This will override the default custom overlay
-  final Widget? Function(BuildContext, bool?, MobileScannerController)?
-      customOverlayBuilder;
+  /// A builder for a custom overlay that can be placed on top of the scanner.
+  /// This will override the default custom overlay.
+  final Widget Function(
+    BuildContext,
+    BoxConstraints,
+    MobileScannerController,
+    bool?,
+  )? overlayBuilder;
 
-  /// The function that builds an error widget when the scanner
-  /// could not be started.
-  ///
-  /// If this is null, defaults to a black [ColoredBox]
-  /// with a centered white [Icons.error] icon.
+  /// A builder for displaying an error widget when the scanner fails to start.
+  /// If null, a default error widget is used.
   final Widget Function(BuildContext, MobileScannerException)? errorBuilder;
 
-  /// The function that builds a placeholder widget when the scanner
-  /// is not yet displaying its camera preview.
-  ///
-  /// If this is null, a black [ColoredBox] is used as placeholder.
+  /// A callback function that is called when an error occurs during barcode detection.
+  final void Function(Object, StackTrace)? onDetectError;
+
+  /// Whether to use the app lifecycle state to pause the camera when the app is paused.
+  final bool useAppLifecycleState;
+
+  /// A builder for a placeholder widget that is displayed while the camera is initializing.
+  /// If null, a black `ColoredBox` is used.
   final Widget Function(BuildContext)? placeholderBuilder;
 
-  /// Called when this object is removed from the tree permanently.
+  /// A callback function that is called when the widget is disposed.
   final void Function()? onDispose;
 
-  /// AppBar widget
-  /// you can use this to add appBar to the scanner screen
+  /// A builder for the `AppBar` of the scanner screen.
   final PreferredSizeWidget? Function(
     BuildContext context,
     MobileScannerController controller,
   )? appBarBuilder;
 
-  /// The builder for the bottom sheet.
-  /// This is displayed below the camera preview.
+  /// A builder for a bottom sheet that is displayed below the camera preview.
   final Widget? Function(
     BuildContext context,
     MobileScannerController controller,
   )? bottomSheetBuilder;
 
-  /// The builder for the bottom navigation bar.
+  /// A builder for the bottom navigation bar of the scanner screen.
   final Widget? Function(
     BuildContext context,
     MobileScannerController controller,
   )? bottomNavigationBarBuilder;
 
-  /// The builder for the overlay above the camera preview.
-  final LayoutWidgetBuilder? overlayBuilder;
-
-  /// The scan window rectangle for the barcode scanner.
+  /// The rectangular area on the screen where the scanner will focus on detecting barcodes.
+  /// If null, a default window will be used.
+  /// **REFACTORED:** This is now the single source of truth for the scan window dimensions.
   final Rect? scanWindow;
 
   /// The threshold for updates to the [scanWindow].
   final double scanWindowUpdateThreshold;
 
-  /// Validator function to check if barcode is valid or not
+  /// A function that validates a detected barcode.
+  /// Returns `true` if the barcode is valid, `false` otherwise.
   final bool Function(BarcodeCapture)? validator;
 
+  /// A callback function that is called when an image is picked from the gallery.
+  /// Returns the path of the picked image.
   final void Function(String?)? onImagePick;
 
-  /// The function that is called when a barcode is detected
+  /// The primary callback function that is called when a barcode is detected.
   final void Function(BarcodeCapture)? onDetect;
 
-  /// Hide gallery button (default: false)
-  /// This will hide the gallery button at the bottom of the screen
-  final bool hideGalleryButton;
+  /// The type of gallery button to use.
+  final GalleryButtonType galleryButtonType;
 
-  /// Hide gallery icon (default: false)
-  /// This will hide the gallery icon in the app bar
-  final bool hideGalleryIcon;
-
-  /// Extend body behind app bar (default: true)
+  /// Whether the body of the scaffold should extend behind the app bar. Defaults to `true`.
   final bool extendBodyBehindAppBar;
 
-  /// Upload from gallery button alignment
+  /// The alignment of the gallery button.
   final AlignmentGeometry? galleryButtonAlignment;
 
-  /// actions for the app bar (optional)
-  /// Camera switch and torch toggle buttons are added by default
-  /// You can add more actions to the app bar using this parameter
+  /// The text to display on the gallery button.
+  final String galleryButtonText;
+
+  /// A list of additional actions to be added to the `AppBar`.
   final List<Widget>? actions;
 
-  /// Lock orientation to portrait (default: true)
+  /// Locks the screen orientation to portrait mode. Defaults to `true`.
   final bool setPortraitOrientation;
 
+  /// Configuration for the scanner overlay (lines, borders, colors).
   final ScannerOverlayConfig overlayConfig;
 
   const AiBarcodeScanner({
@@ -104,18 +108,18 @@ class AiBarcodeScanner extends StatefulWidget {
     this.fit = BoxFit.cover,
     this.controller,
     this.scanWindowUpdateThreshold = 0.0,
-    this.customOverlayBuilder,
+    this.overlayBuilder,
     this.errorBuilder,
+    this.onDetectError,
+    this.useAppLifecycleState = true,
     this.placeholderBuilder,
     this.onDispose,
     this.scanWindow,
     this.appBarBuilder,
-    this.overlayBuilder,
     this.onDetect,
     this.validator,
     this.onImagePick,
-    this.hideGalleryButton = false,
-    this.hideGalleryIcon = true,
+    this.galleryButtonType = GalleryButtonType.filled,
     this.bottomSheetBuilder,
     this.bottomNavigationBarBuilder,
     this.extendBodyBehindAppBar = true,
@@ -123,6 +127,7 @@ class AiBarcodeScanner extends StatefulWidget {
     this.actions,
     this.setPortraitOrientation = true,
     this.overlayConfig = const ScannerOverlayConfig(),
+    this.galleryButtonText = 'Upload from gallery',
   });
 
   @override
@@ -131,27 +136,36 @@ class AiBarcodeScanner extends StatefulWidget {
 
 class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
   final ValueNotifier<bool?> _isSuccess = ValueNotifier<bool?>(null);
-  late MobileScannerController controller;
-  double _currentZoom = 1.0;
-  double _startZoom = 1.0;
+  late MobileScannerController _controller;
+  // State variable to store the initial zoom scale upon starting a pinch gesture.
+  double _baseZoomScale = 0.0;
+
+  // A timer to reset the overlay color after a scan.
+  Timer? _colorResetTimer;
 
   @override
   void initState() {
+    super.initState();
     if (widget.setPortraitOrientation) {
-      // Set to portrait only
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
     }
-    controller = widget.controller ?? MobileScannerController();
-    super.initState();
+    _controller = widget.controller ?? MobileScannerController();
   }
 
   @override
   void dispose() {
+    // Cancel the timer when the widget is disposed to prevent memory leaks.
+    _colorResetTimer?.cancel();
+
     if (widget.controller == null) {
-      controller.dispose();
+      _controller.dispose();
+    }
+    // Restore preferred orientations if they were set
+    if (widget.setPortraitOrientation) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     }
     widget.onDispose?.call();
     super.dispose();
@@ -159,136 +173,200 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
 
   @override
   Widget build(BuildContext context) {
-    switch (UniversalPlatform.value) {
-      case UniversalPlatformType.Windows:
-      case UniversalPlatformType.Linux:
-      case UniversalPlatformType.Fuchsia:
-        return Scaffold(
-          appBar: widget.appBarBuilder?.call(context, controller),
-          body: Center(
-            child: SelectableText(
-              'This platform is not supported, for more information, please visit https://pub.dev/packages/mobile_scanner#platform-support',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+    // Unsupported platforms return a message.
+    if (UniversalPlatform.isWindows || UniversalPlatform.isLinux) {
+      return Scaffold(
+        appBar: widget.appBarBuilder?.call(context, _controller),
+        body: Center(
+          child: SelectableText.rich(
+            TextSpan(children: [
+              TextSpan(
+                  text:
+                      'This platform(${UniversalPlatform.operatingSystem}) is not supported.\nPlease visit '),
+              TextSpan(
+                text:
+                    'https://pub.dev/packages/mobile_scanner#platform-support',
+                style: TextStyle(color: Theme.of(context).primaryColor),
+              ),
+              TextSpan(text: ' for more information.'),
+            ]),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        );
-      default:
-        return Scaffold(
-          appBar: widget.appBarBuilder?.call(context, controller) ??
-              CupertinoNavigationBar(
-                border: Border.all(color: Colors.transparent),
-                backgroundColor: CupertinoColors.systemFill,
-                trailing: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+        ),
+      );
+    }
+    // This makes it responsive and correctly positioned on any screen.
+    final screenSize = MediaQuery.sizeOf(context);
+    final defaultScanWindowWidth = screenSize.width * 0.8;
+    final defaultScanWindowHeight = screenSize.height * 0.36;
+    final defaultScanWindow = Rect.fromCenter(
+      center: screenSize.center(Offset.zero),
+      width: defaultScanWindowWidth,
+      height: defaultScanWindowHeight,
+    );
+    // NEW: Use the provided scanWindow or the default one.
+    final Rect scanWindow = widget.scanWindow ?? defaultScanWindow;
+    final isTorchOn = _controller.value.torchState == TorchState.on;
+
+    final actionIcons = [
+      IconButton.filled(
+        style: IconButton.styleFrom(
+          backgroundColor: CupertinoColors.systemGrey6,
+          foregroundColor: CupertinoColors.darkBackgroundGray,
+        ),
+        icon: const Icon(CupertinoIcons.arrow_2_circlepath),
+        onPressed: () => _controller.switchCamera(),
+      ),
+      IconButton.filled(
+        style: IconButton.styleFrom(
+          backgroundColor: isTorchOn
+              ? CupertinoColors.activeOrange
+              : CupertinoColors.systemGrey6,
+          foregroundColor: CupertinoColors.darkBackgroundGray,
+        ),
+        icon: const Icon(CupertinoIcons.bolt),
+        onPressed: () {
+          _controller.toggleTorch();
+          setState(() {});
+        },
+      ),
+    ];
+
+    return Scaffold(
+      appBar: widget.appBarBuilder?.call(context, _controller) ??
+          AppBar(
+            backgroundColor: Colors.transparent,
+            actions: [
+              if (widget.galleryButtonType == GalleryButtonType.icon) ...[
+                GalleryButton.icon(
+                  onImagePick: widget.onImagePick,
+                  onDetect: widget.onDetect,
+                  validator: widget.validator,
+                  controller: _controller,
+                  isSuccess: _isSuccess,
+                  text: widget.galleryButtonText,
+                ),
+                ...actionIcons,
+              ],
+              ...?widget.actions,
+            ],
+          ),
+      extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
+      bottomSheet: widget.bottomSheetBuilder?.call(context, _controller),
+      bottomNavigationBar:
+          widget.bottomNavigationBarBuilder?.call(context, _controller),
+      body: GestureDetector(
+        // UPDATED: onScaleStart and onScaleUpdate logic is now more robust.
+        onScaleStart: (details) {
+          _baseZoomScale = _controller.value.zoomScale;
+          setState(() {});
+        },
+        onScaleUpdate: (details) {
+          // The `details.scale` is a multiplier (e.g., 1.2 for 20% zoom in).
+          // We calculate the change (`delta`) from the start of the gesture.
+          final double delta = details.scale - 1.0;
+
+          // Add the delta to the base zoom scale.
+          final double newZoomScale = _baseZoomScale + delta;
+
+          // Set the new zoom scale, ensuring it's within the valid range [0.0, 1.0].
+          _controller.setZoomScale(newZoomScale.clamp(0.0, 1.0));
+          setState(() {});
+        },
+        child: Stack(
+          children: [
+            MobileScanner(
+              key: widget.key,
+              controller: _controller,
+              onDetect: _onDetect,
+              fit: widget.fit,
+              scanWindow: scanWindow,
+              errorBuilder: widget.errorBuilder ??
+                  (context, error) => ErrorBuilder(error: error),
+              placeholderBuilder: widget.placeholderBuilder,
+              scanWindowUpdateThreshold: widget.scanWindowUpdateThreshold,
+              overlayBuilder: (context, overlay) =>
+                  ValueListenableBuilder<bool?>(
+                valueListenable: _isSuccess,
+                builder: (context, isSuccess, child) {
+                  return widget.overlayBuilder
+                          ?.call(context, overlay, _controller, isSuccess) ??
+                      ScannerOverlay(
+                        // REFACTORED: Pass the scanWindow to the overlay.
+                        scanWindow: scanWindow,
+                        config: widget.overlayConfig,
+                        isSuccess: isSuccess,
+                      );
+                },
+              ),
+              onDetectError: widget.onDetectError ??
+                  (error, stackTrace) {
+                    debugPrint('Error during barcode detection: $error');
+                  },
+              useAppLifecycleState: widget.useAppLifecycleState,
+            ),
+            if (widget.galleryButtonType == GalleryButtonType.filled)
+              Align(
+                alignment: widget.galleryButtonAlignment ??
+                    Alignment.lerp(
+                      Alignment.bottomCenter,
+                      Alignment.center,
+                      0.42,
+                    )!,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.cameraswitch_rounded),
-                      color: CupertinoColors.systemGrey6,
-                      onPressed: () => controller.switchCamera(),
-                    ),
-                    IconButton(
-                      icon: controller.value.torchState == TorchState.on
-                          ? const Icon(Icons.flashlight_off_rounded)
-                          : const Icon(Icons.flashlight_on_rounded),
-                      color: CupertinoColors.systemGrey6,
-                      onPressed: () {
-                        controller.toggleTorch();
-                        setState(() {});
-                      },
-                    ),
-                    if (!widget.hideGalleryIcon)
-                      GalleryButton.icon(
-                        onImagePick: widget.onImagePick,
-                        onDetect: widget.onDetect,
-                        validator: widget.validator,
-                        controller: controller,
-                        isSuccess: _isSuccess,
-                      ),
-                    ...?widget.actions,
-                  ],
-                ),
-              ),
-          extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
-          bottomSheet: widget.bottomSheetBuilder?.call(context, controller),
-          bottomNavigationBar: widget.bottomNavigationBarBuilder?.call(
-            context,
-            controller,
-          ),
-          body: GestureDetector(
-            onScaleStart: (details) {
-              _startZoom = _currentZoom;
-            },
-            onScaleUpdate: (details) {
-              double newZoom = (_startZoom * details.scale).clamp(1.0, 5.0);
-              if (newZoom != _currentZoom) {
-                setState(() => _currentZoom = newZoom);
-                controller.setZoomScale(_currentZoom);
-              }
-            },
-            child: Stack(
-              children: [
-                MobileScanner(
-                  onDetect: onDetect,
-                  controller: controller,
-                  fit: widget.fit,
-                  errorBuilder:
-                      widget.errorBuilder ?? (_, __) => const ErrorBuilder(),
-                  placeholderBuilder: widget.placeholderBuilder,
-                  scanWindow: widget.scanWindow,
-                  key: widget.key,
-                  overlayBuilder: widget.overlayBuilder,
-                  scanWindowUpdateThreshold: widget.scanWindowUpdateThreshold,
-                ),
-                ValueListenableBuilder<bool?>(
-                  valueListenable: _isSuccess,
-                  builder: (context, isSuccess, __) {
-                    return widget.customOverlayBuilder
-                            ?.call(context, isSuccess, controller) ??
-                        ScannerOverlay(
-                          config: widget.overlayConfig,
-                          isSuccess: isSuccess,
-                        );
-                  },
-                ),
-                if (!widget.hideGalleryButton)
-                  Align(
-                    alignment: widget.galleryButtonAlignment ??
-                        Alignment.lerp(
-                          Alignment.bottomCenter,
-                          Alignment.center,
-                          0.40,
-                        )!,
-                    child: GalleryButton(
+                    GalleryButton(
                       onImagePick: widget.onImagePick,
                       onDetect: widget.onDetect,
                       validator: widget.validator,
-                      controller: controller,
+                      controller: _controller,
                       isSuccess: _isSuccess,
+                      text: widget.galleryButtonText,
                     ),
-                  ),
-              ],
-            ),
-          ),
-        );
-    }
+                    const SizedBox(width: 4),
+                    ...actionIcons,
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
-  void onDetect(BarcodeCapture barcodes) {
+  /// REFACTORED: Renamed for clarity and improved error handling.
+  void _onDetect(BarcodeCapture capture) {
+    // Cancel any existing timer to prevent premature color reset on rapid scans.
+    _colorResetTimer?.cancel();
     try {
-      widget.onDetect?.call(barcodes);
+      bool isValid = true;
       if (widget.validator != null) {
-        final isValid = widget.validator!(barcodes);
-        _isSuccess.value = isValid;
-        if (!isValid) {
-          HapticFeedback.heavyImpact();
-        } else {
-          HapticFeedback.mediumImpact();
-        }
+        isValid = widget.validator!(capture);
+      }
+
+      _isSuccess.value = isValid;
+      HapticFeedback.lightImpact(); // Always give feedback on scan
+
+      if (isValid) {
+        // Only call the main onDetect if the barcode is valid.
+        widget.onDetect?.call(capture);
+        HapticFeedback.mediumImpact();
+      } else {
+        // Give stronger feedback for an invalid barcode.
+        HapticFeedback.heavyImpact();
       }
     } catch (e) {
-      debugPrint(e.toString());
       _isSuccess.value = false;
+      debugPrint('Error during barcode validation: $e');
     }
+    // Start a new timer to reset the color back to normal (null).
+    _colorResetTimer = Timer(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        _isSuccess.value = null;
+      }
+    });
   }
 }

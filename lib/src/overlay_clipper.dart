@@ -1,33 +1,36 @@
+// lib/src/overlay_clipper.dart
 import 'package:flutter/material.dart';
 
+/// A custom clipper that creates a "cutout" effect for the scanner overlay.
+/// REFACTORED: This now uses a Rect directly instead of hardcoded percentages.
 class OverlayClipper extends CustomClipper<Path> {
-  OverlayClipper({this.borderRadius});
-  final double? borderRadius;
+  OverlayClipper({
+    required this.scanWindow,
+    this.borderRadius = 16.0,
+  });
+
+  final Rect scanWindow;
+  final double borderRadius;
+
   @override
   Path getClip(Size size) {
-    final path = Path();
-
-    // Rectangle with rounded corners for the transparent area
-    final overlayRect = Rect.fromLTWH(
-      size.width * 0.1,
-      size.height * 0.3,
-      size.width * 0.8,
-      size.height * 0.4,
-    );
-    final roundedRect = RRect.fromRectAndRadius(
-      overlayRect,
-      Radius.circular(borderRadius ?? 16),
+    // Create a rounded rectangle for the transparent scan window area.
+    final RRect roundedRect = RRect.fromRectAndRadius(
+      scanWindow,
+      Radius.circular(borderRadius),
     );
 
-    // Full screen with cutout
-    path
+    // Create a path for the entire screen and then cut out the rounded rectangle.
+    return Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(roundedRect)
-      ..fillType = PathFillType.evenOdd; // Cutout effect
-
-    return path;
+      ..fillType = PathFillType.evenOdd; // This creates the cutout effect.
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(covariant OverlayClipper oldClipper) {
+    // Reclip if the scan window or border radius changes.
+    return scanWindow != oldClipper.scanWindow ||
+        borderRadius != oldClipper.borderRadius;
+  }
 }
