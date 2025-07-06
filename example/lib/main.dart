@@ -1,9 +1,8 @@
+// example/lib/main.dart
 import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -13,6 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: HomePage(),
     );
   }
@@ -26,92 +26,162 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String barcode = 'Tap  to scan';
+  String _barcode = 'Tap a scan option below';
+
+  /// Helper method to push the scanner screen and handle the result.
+  Future<void> _navigateToScanner(Widget scanner) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => scanner,
+      ),
+    );
+
+    // Update the UI with the scanned barcode if the result is not null.
+    if (result != null && result is String) {
+      setState(() {
+        _barcode = result;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(' Scanner'),
+        title: const Text('AI Barcode Scanner Demo'),
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ElevatedButton(
-              child: const Text('Scan Barcode'),
-              onPressed: () async {
-                final result = await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => AiBarcodeScanner(
-                      onDispose: () {
-                        /// This is called when the barcode scanner is disposed.
-                        /// You can write your own logic here.
-                        debugPrint("Barcode scanner disposed!");
-                      },
-                      controller: MobileScannerController(
-                        detectionSpeed: DetectionSpeed.noDuplicates,
-                        // formats: [
-                        //   BarcodeFormat.qrCode,
-                        //   BarcodeFormat.code128,
-                        //   BarcodeFormat.code39,
-                        //   BarcodeFormat.ean13,
-                        //   BarcodeFormat.ean8,
-                        //   BarcodeFormat.upcA,
-                        //   BarcodeFormat.upcE,
-                        //   BarcodeFormat.pdf417,
-                        //   BarcodeFormat.dataMatrix,
-                        //   BarcodeFormat.aztec,
-                        // ],
+            // Display area for the latest scanned barcode result.
+            Expanded(
+              child: Card(
+                color: Colors.grey.shade200,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      _barcode,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // List of buttons to open the scanner with different configurations.
+            Expanded(
+              flex: 2,
+              child: ListView(
+                children: [
+                  _buildDemoButton(
+                    title: "Default Scanner",
+                    subtitle: "Opens the scanner with default settings.",
+                    scanner: AiBarcodeScanner(
+                      // The onDetect callback is only called when a barcode is scanned and validated.
                       onDetect: (BarcodeCapture capture) {
-                        /// The row string scanned barcode value
-                        final String? scannedValue =
-                            capture.barcodes.first.rawValue;
-                        debugPrint("Barcode scanned: $scannedValue");
-
-                        /// The `Uint8List` image is only available if `returnImage` is set to `true`.
-                        final Uint8List? image = capture.image;
-                        debugPrint("Barcode image: $image");
-
-                        /// row data of the barcode
-                        final Object? raw = capture.raw;
-                        debugPrint("Barcode raw: $raw");
-
-                        /// List of scanned barcodes if any
-                        final List<Barcode> barcodes = capture.barcodes;
-                        debugPrint("Barcode list: $barcodes");
-
-                        // // --- Auto-close scanner after successful scan ---
-                        // if (scannedValue != null && scannedValue.isNotEmpty) {
-                        //   // Pop the scanner route and return the scanned value
-                        //   Navigator.of(context).pop(scannedValue);
-                        // }
-                      },
-                      validator: (value) {
-                        if (value.barcodes.isEmpty) {
-                          return false;
-                        }
-                        if (!(value.barcodes.first.rawValue
-                                ?.contains('flutter.dev') ??
-                            false)) {
-                          return false;
-                        }
-                        return true;
+                        /// Do something with the barcode
                       },
                     ),
                   ),
-                );
-                // Update the barcode value in the parent widget
-                if (result != null && result is String) {
-                  setState(() {
-                    barcode = result;
-                  });
-                }
-              },
+                  _buildDemoButton(
+                    title: "Scan with Validator",
+                    subtitle: "Only accepts barcodes containing 'pub.dev'.",
+                    scanner: AiBarcodeScanner(
+                      controller: MobileScannerController(
+                        detectionSpeed: DetectionSpeed.noDuplicates,
+                      ),
+                      // Validator to check if the barcode contains a specific string.
+                      validator: (value) {
+                        return value.barcodes.first.rawValue
+                                ?.contains('pub.dev') ??
+                            false;
+                      },
+                      onDetect: (BarcodeCapture capture) {
+                        /// Do something with the barcode
+                        ///
+                        if (mounted) {
+                          Navigator.pop(
+                              context, capture.barcodes.firstOrNull?.rawValue);
+                        }
+                      },
+                    ),
+                  ),
+                  _buildDemoButton(
+                    title: "Custom Overlay & Style",
+                    subtitle: "Changes colors, border, and animation.",
+                    scanner: AiBarcodeScanner(
+                      // Use the overlayConfig to customize the scanner's appearance.
+                      overlayConfig: const ScannerOverlayConfig(
+                        borderColor: Colors.teal,
+                        successColor: Colors.lightGreenAccent,
+                        errorColor: Colors.orange,
+                        scannerBorder: ScannerBorder.none,
+                        scannerAnimation: ScannerAnimation.fullWidth,
+                        scannerOverlayBackground: ScannerOverlayBackground.none,
+                      ),
+                      onDetect: (BarcodeCapture capture) {
+                        /// Do something with the barcode
+                      },
+                    ),
+                  ),
+                  _buildDemoButton(
+                    title: "Custom AppBar",
+                    subtitle: "Replaces the default AppBar with a custom one.",
+                    scanner: AiBarcodeScanner(
+                      // Use appBarBuilder to provide a custom AppBar.
+                      appBarBuilder: (context, controller) {
+                        return AppBar(
+                          title: const Text("Custom Scanner"),
+                          centerTitle: true,
+                          backgroundColor: Colors.red,
+                        );
+                      },
+                      onDetect: (BarcodeCapture capture) {
+                        /// Do something with the barcode
+                      },
+                    ),
+                  ),
+                  _buildDemoButton(
+                    title: "Icon Gallery Button",
+                    subtitle: "Shows an icon button at the top right.",
+                    scanner: AiBarcodeScanner(
+                      galleryButtonType: GalleryButtonType.icon,
+                      galleryButtonText: "Select from Photos",
+                      onDetect: (BarcodeCapture capture) {
+                        /// Do something with the barcode
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Text(barcode),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Helper method to create a styled button for the demo list.
+  Widget _buildDemoButton({
+    required String title,
+    required String subtitle,
+    required Widget scanner,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12.0),
+      child: ListTile(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right_rounded, size: 30),
+        onTap: () => _navigateToScanner(scanner),
       ),
     );
   }

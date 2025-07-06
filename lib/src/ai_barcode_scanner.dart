@@ -196,10 +196,20 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
         ),
       );
     }
+
     // This makes it responsive and correctly positioned on any screen.
+    final config = widget.overlayConfig;
+    final isNoRect = (config.scannerBorder == ScannerBorder.none ||
+            config.scannerBorder == ScannerBorder.full) ||
+        config.scannerOverlayBackground == ScannerOverlayBackground.none ||
+        (config.scannerAnimation == ScannerAnimation.fullWidth ||
+            config.scannerAnimation == ScannerAnimation.none);
+
     final screenSize = MediaQuery.sizeOf(context);
-    final defaultScanWindowWidth = screenSize.width * 0.8;
-    final defaultScanWindowHeight = screenSize.height * 0.36;
+    final defaultScanWindowWidth =
+        isNoRect ? screenSize.width : screenSize.width * 0.8;
+    final defaultScanWindowHeight =
+        isNoRect ? screenSize.height : screenSize.height * 0.36;
     final defaultScanWindow = Rect.fromCenter(
       center: screenSize.center(Offset.zero),
       width: defaultScanWindowWidth,
@@ -342,13 +352,15 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
     // Cancel any existing timer to prevent premature color reset on rapid scans.
     _colorResetTimer?.cancel();
     try {
-      bool isValid = true;
-      if (widget.validator != null) {
-        isValid = widget.validator!(capture);
-      }
+      HapticFeedback.lightImpact(); // Always give feedback on scan
+
+      if (widget.validator == null) return;
+
+      final isValid = widget.validator?.call(capture);
+
+      if (isValid == null) return;
 
       _isSuccess.value = isValid;
-      HapticFeedback.lightImpact(); // Always give feedback on scan
 
       if (isValid) {
         // Only call the main onDetect if the barcode is valid.
