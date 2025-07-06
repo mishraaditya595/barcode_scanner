@@ -25,38 +25,40 @@ class DraggableSheet extends StatelessWidget {
       maxChildSize: 0.4,
       expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
-        return Column(
-          children: [
-            ...[
-              if (!hideDragHandler)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).dividerColor,
-                    borderRadius: BorderRadius.circular(10),
+        return SingleChildScrollView(
+          controller: scrollController,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...[
+                if (!hideDragHandler)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).dividerColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    child: const SizedBox(
+                      width: 40,
+                      height: 5,
+                    ),
                   ),
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  child: const SizedBox(
-                    width: 40,
-                    height: 5,
+                if (!hideTitle) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              if (!hideTitle) ...[
-                const SizedBox(height: 6),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Divider(),
-              ]
+                  const SizedBox(height: 6),
+                  const Divider(),
+                ]
+              ],
+              child,
             ],
-            Expanded(
-              child: child,
-            ),
-          ],
+          ),
         );
       },
     );

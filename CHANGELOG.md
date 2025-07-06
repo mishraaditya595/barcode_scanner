@@ -1,6 +1,7 @@
-## 7.0.1
+## 7.0.0
 
 **Improvements:**
+
 - Added comprehensive documentation for supported barcode formats including PDF417
 - Updated example to demonstrate PDF417 format configuration
 - Enhanced README with format configuration examples
