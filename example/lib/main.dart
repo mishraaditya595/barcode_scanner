@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage> {
             ElevatedButton(
               child: const Text('Scan Barcode'),
               onPressed: () async {
-                await Navigator.of(context).push(
+                final result = await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => AiBarcodeScanner(
                       onDispose: () {
@@ -51,18 +51,18 @@ class _HomePageState extends State<HomePage> {
                       hideGalleryButton: false,
                       controller: MobileScannerController(
                         detectionSpeed: DetectionSpeed.noDuplicates,
-                        formats: [
-                          BarcodeFormat.qrCode,
-                          BarcodeFormat.code128,
-                          BarcodeFormat.code39,
-                          BarcodeFormat.ean13,
-                          BarcodeFormat.ean8,
-                          BarcodeFormat.upcA,
-                          BarcodeFormat.upcE,
-                          BarcodeFormat.pdf417,
-                          BarcodeFormat.dataMatrix,
-                          BarcodeFormat.aztec,
-                        ],
+                        // formats: [
+                        //   BarcodeFormat.qrCode,
+                        //   BarcodeFormat.code128,
+                        //   BarcodeFormat.code39,
+                        //   BarcodeFormat.ean13,
+                        //   BarcodeFormat.ean8,
+                        //   BarcodeFormat.upcA,
+                        //   BarcodeFormat.upcE,
+                        //   BarcodeFormat.pdf417,
+                        //   BarcodeFormat.dataMatrix,
+                        //   BarcodeFormat.aztec,
+                        // ],
                       ),
                       onDetect: (BarcodeCapture capture) {
                         /// The row string scanned barcode value
@@ -81,6 +81,12 @@ class _HomePageState extends State<HomePage> {
                         /// List of scanned barcodes if any
                         final List<Barcode> barcodes = capture.barcodes;
                         debugPrint("Barcode list: $barcodes");
+
+                        // // --- Auto-close scanner after successful scan ---
+                        // if (scannedValue != null && scannedValue.isNotEmpty) {
+                        //   // Pop the scanner route and return the scanned value
+                        //   Navigator.of(context).pop(scannedValue);
+                        // }
                       },
                       validator: (value) {
                         if (value.barcodes.isEmpty) {
@@ -96,6 +102,12 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 );
+                // Update the barcode value in the parent widget
+                if (result != null && result is String) {
+                  setState(() {
+                    barcode = result;
+                  });
+                }
               },
             ),
             Text(barcode),

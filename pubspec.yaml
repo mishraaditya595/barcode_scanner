@@ -25,6 +25,7 @@ dependencies:
 
   mobile_scanner: ^7.0.1
   image_picker: ^1.1.2
+  universal_platform: ^1.1.0
 
 dev_dependencies:
   flutter_test:

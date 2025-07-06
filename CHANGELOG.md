@@ -5,6 +5,26 @@
 - Added comprehensive documentation for supported barcode formats including PDF417
 - Updated example to demonstrate PDF417 format configuration
 - Enhanced README with format configuration examples
+- Added comprehensive documentation for supported barcode formats including PDF417
+- Updated example to demonstrate PDF417 format configuration
+- Enhanced README with format configuration examples
+- Added Windows platform support documentation and runtime checks
+- Added scanning accuracy and best practices documentation
+- Added troubleshooting sections for common issues:
+  - iOS CocoaPods dependency conflicts
+  - Scanner crashes and black screen issues
+  - Web mobile compatibility limitations
+  - Distance scanning accuracy limitations
+- Updated example to show proper navigation patterns for auto-closing scanner
+- Added orientation handling improvements with `restoreOrientationsOnClose` parameter
+- Fixed RenderFlex overflow in DraggableSheet widget
+
+**Documentation:**
+
+- Added comprehensive troubleshooting guide
+- Added platform support limitations documentation
+- Enhanced usage examples with best practices
+- Added known limitations section for dependency-related issues
 
 ## 6.0.1
 

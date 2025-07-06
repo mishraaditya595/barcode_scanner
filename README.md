@@ -22,6 +22,8 @@
 | ------- | --- | ----- | --- | ----- | ------- |
 | ✔       | ✔   | ✔     | ✔   | :x:   | :x:     |
 
+> **Note:** Windows is **not supported** because the underlying [mobile_scanner](https://pub.dev/packages/mobile_scanner) package does not support Windows. If you need Windows support, please follow the mobile_scanner repository for updates.
+
 ## Features Supported
 
 See the example app for detailed implementation information.
@@ -67,6 +69,38 @@ Example,
 <string>This app needs photos access to get QR code from photo library</string>
 ```
 
+#### Troubleshooting iOS CocoaPods Issues
+
+If you encounter CocoaPods dependency conflicts (especially with Firebase), try these steps:
+
+1. **Update CocoaPods specs:**
+
+   ```bash
+   pod repo update
+   ```
+
+2. **If that doesn't work, clean and reinstall:**
+
+   ```bash
+   # Delete pod files
+   rm -rf ios/Pods ios/Podfile.lock
+
+   # Clean Flutter
+   flutter clean
+   flutter pub get
+
+   # Update iOS platform version in Podfile
+   # Change platform :ios, '11.0' to platform :ios, '14.0'
+
+   # Reinstall pods
+   cd ios
+   pod install
+   cd ..
+   flutter build ios
+   ```
+
+This is a known issue with the underlying mobile_scanner package and its dependencies.
+
 ### macOS
 
 Ensure that you granted camera permission in XCode -> Signing & Capabilities:
@@ -77,6 +111,8 @@ Ensure that you granted camera permission in XCode -> Signing & Capabilities:
 
 As of version 5.0.0 adding the barcode scanning library script to the `index.html` is no longer required,
 as the script is automatically loaded on first use.
+
+> **Note:** Web support may have compatibility issues on mobile devices (smartphones). For optimal mobile experience, consider using native Android/iOS apps instead of web apps.
 
 ### Providing a mirror for the barcode scanning library
 
@@ -134,64 +170,57 @@ controller: MobileScannerController(
 ),
 ```
 
+## Scanning Accuracy & Best Practices
+
+### Distance Scanning
+
+The barcode scanner may have reduced accuracy when scanning from a distance. For optimal results:
+
+- **Keep the barcode within 10-30 cm** of the camera
+- **Ensure good lighting** conditions
+- **Hold the device steady** while scanning
+- **Clean the camera lens** if scanning is unclear
+
+### Known Limitations
+
+- **Distance accuracy**: Scanning from far distances may result in incorrect readings
+- **This is a limitation of the underlying [mobile_scanner](https://pub.dev/packages/mobile_scanner) package and MLKit**
+- For critical applications, always verify scanned values and implement validation
+
+### Troubleshooting
+
+If you're getting incorrect scans:
+
+1. Move closer to the barcode
+2. Ensure the barcode is well-lit and not damaged
+3. Try different angles
+4. Clean the camera lens
+5. Check if the barcode format is supported
+
+### Scanner Crashes
+
+If the scanner crashes when opening or closing:
+
+1. **Ensure proper navigation**: Use `Navigator.of(context).pop()` in `onDetect` to close the scanner
+2. **Controller lifecycle**: The controller is automatically managed by the widget
+3. **Check permissions**: Ensure camera permissions are granted
+4. **Platform-specific issues**: Some crashes may be related to the underlying mobile_scanner package
+
+**Black Screen Issues:**
+
+- Use `canPop: true` in your navigation setup
+- Avoid calling `Navigator.of(context).pop()` manually in `if (context.mounted){}` blocks
+- Let the widget handle its own navigation lifecycle
+
+Example of proper navigation:
+
 ```dart
-import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
-
-/// Simple example of using the barcode scanner.
-AiBarcodeScanner(
-        onDetect: (BarcodeCapture barcodeCapture) {
-          debugPrint(barcodeCapture);
-        },
-      ),
-
-/// Example of using the barcode scanner with a controller.
-AiBarcodeScanner(
-        controller: MobileScannerController(
-             detectionSpeed: DetectionSpeed.noDuplicates,
-           ),
-        onDetect: (BarcodeCapture barcodeCapture) {
-          debugPrint(barcodeCapture);
-        },
-      ),
-
-/// Example of using the barcode scanner with validation.
-/// Validator works on the raw string, not the decoded value.
-/// If you want to validate the scanner, use the [validate] parameter.
-AiBarcodeScanner(
-  onDispose: () {
-    /// This is called when the barcode scanner is disposed.
-    /// You can write your own logic here.
-    debugPrint("Barcode scanner disposed!");
-  },
-  controller: MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-  ),
-  onDetect: (BarcodeCapture capture) {
-    /// The row string scanned barcode value
-    final String? scannedValue =
-        capture.barcodes.first.rawValue;
-
-    /// The `Uint8List` image is only available if `returnImage` is set to `true`.
-    final Uint8List? image = capture.image;
-
-    /// row data of the barcode
-    final Object? raw = capture.raw;
-
-    /// List of scanned barcodes if any
-    final List<Barcode> barcodes = capture.barcodes;
-  },
-  validator: (value) {
-    if (value.barcodes.isEmpty) {
-      return false;
-    }
-    if (!(value.barcodes.first.rawValue
-            ?.contains('flutter.dev') ??
-        false)) {
-      return false;
-    }
-    return true;
-  },
-),
+onDetect: (BarcodeCapture capture) {
+  final String? scannedValue = capture.barcodes.first.rawValue;
+  if (scannedValue != null) {
+    Navigator.of(context).pop(scannedValue); // Close scanner
+  }
+},
 ```
 
 ## Usage ([mobile_scanner](https://pub.dev/packages/mobile_scanner))
@@ -516,3 +545,9 @@ All contributions are welcome. Let's make this package better together.
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
+
+## Windows Support
+
+**Windows is not supported.**
+
+This package depends on [mobile_scanner](https://pub.dev/packages/mobile_scanner), which does not support Windows. Attempts to use the scanner on Windows will result in an error. For more information, see the [mobile_scanner pub.dev page](https://pub.dev/packages/mobile_scanner).

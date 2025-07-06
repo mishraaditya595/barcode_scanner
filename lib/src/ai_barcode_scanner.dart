@@ -1,8 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:universal_platform/universal_platform.dart';
 
-import 'draggable_sheet.dart';
 import 'error_builder.dart';
 import 'gallery_button.dart';
 import 'overlay.dart';
@@ -20,45 +21,6 @@ class AiBarcodeScanner extends StatefulWidget {
   /// This will override the default custom overlay
   final Widget? Function(BuildContext, bool?, MobileScannerController)?
       customOverlayBuilder;
-
-  /// Overlay border color (default: white)
-  final Color? borderColor;
-
-  /// Overlay border width (default: 10)
-  final double borderWidth;
-
-  /// Overlay color
-  final Color overlayColor;
-
-  /// Overlay border radius (default: 10)
-  final double borderRadius;
-
-  /// Overlay border length (default: 30)
-  final double borderLength;
-
-  /// Overlay cut out width (optional)
-  final double? cutOutWidth;
-
-  /// Overlay cut out height (optional)
-  final double? cutOutHeight;
-
-  /// Overlay cut out offset (default: 0)
-  final double cutOutBottomOffset;
-
-  /// Overlay cut out size (default: 300)
-  final double cutOutSize;
-
-  /// Show error or not (default: true)
-  final bool showError;
-
-  /// Error color (default: red)
-  final Color errorColor;
-
-  /// Show success or not (default: true)
-  final bool showSuccess;
-
-  /// Success color (default: green)
-  final Color successColor;
 
   /// The function that builds an error widget when the scanner
   /// could not be started.
@@ -79,13 +41,22 @@ class AiBarcodeScanner extends StatefulWidget {
   /// AppBar widget
   /// you can use this to add appBar to the scanner screen
   final PreferredSizeWidget? Function(
-      BuildContext context, MobileScannerController controller)? appBarBuilder;
+    BuildContext context,
+    MobileScannerController controller,
+  )? appBarBuilder;
 
   /// The builder for the bottom sheet.
   /// This is displayed below the camera preview.
   final Widget? Function(
-          BuildContext context, MobileScannerController controller)?
-      bottomSheetBuilder;
+    BuildContext context,
+    MobileScannerController controller,
+  )? bottomSheetBuilder;
+
+  /// The builder for the bottom navigation bar.
+  final Widget? Function(
+    BuildContext context,
+    MobileScannerController controller,
+  )? bottomNavigationBarBuilder;
 
   /// The builder for the overlay above the camera preview.
   final LayoutWidgetBuilder? overlayBuilder;
@@ -103,18 +74,6 @@ class AiBarcodeScanner extends StatefulWidget {
 
   /// The function that is called when a barcode is detected
   final void Function(BarcodeCapture)? onDetect;
-
-  /// Title for the draggable sheet (default: 'Scan any QR code')
-  final String sheetTitle;
-
-  /// Child widget for the draggable sheet (default: SizedBox.shrink())
-  final Widget sheetChild;
-
-  /// Hide drag handler of the draggable sheet (default: false)
-  final bool hideSheetDragHandler;
-
-  /// Hide title of the draggable sheet (default: false)
-  final bool hideSheetTitle;
 
   /// Hide gallery button (default: false)
   /// This will hide the gallery button at the bottom of the screen
@@ -138,25 +97,14 @@ class AiBarcodeScanner extends StatefulWidget {
   /// Lock orientation to portrait (default: true)
   final bool setPortraitOrientation;
 
+  final ScannerOverlayConfig overlayConfig;
+
   const AiBarcodeScanner({
     super.key,
     this.fit = BoxFit.cover,
     this.controller,
-    this.borderColor,
-    this.cutOutWidth,
-    this.cutOutHeight,
-    this.borderWidth = 12,
-    this.overlayColor = const Color.fromRGBO(0, 0, 0, 82),
-    this.borderRadius = 24,
-    this.borderLength = 42,
-    this.cutOutSize = 320,
-    this.cutOutBottomOffset = 110,
     this.scanWindowUpdateThreshold = 0.0,
     this.customOverlayBuilder,
-    this.showError = true,
-    this.showSuccess = true,
-    this.errorColor = Colors.red,
-    this.successColor = Colors.green,
     this.errorBuilder,
     this.placeholderBuilder,
     this.onDispose,
@@ -166,17 +114,15 @@ class AiBarcodeScanner extends StatefulWidget {
     this.onDetect,
     this.validator,
     this.onImagePick,
-    this.sheetTitle = 'Scan any QR code',
-    this.sheetChild = const SizedBox.shrink(),
-    this.hideSheetDragHandler = false,
-    this.hideSheetTitle = false,
     this.hideGalleryButton = false,
     this.hideGalleryIcon = true,
     this.bottomSheetBuilder,
+    this.bottomNavigationBarBuilder,
     this.extendBodyBehindAppBar = true,
     this.galleryButtonAlignment,
     this.actions,
     this.setPortraitOrientation = true,
+    this.overlayConfig = const ScannerOverlayConfig(),
   });
 
   @override
@@ -186,18 +132,19 @@ class AiBarcodeScanner extends StatefulWidget {
 class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
   final ValueNotifier<bool?> _isSuccess = ValueNotifier<bool?>(null);
   late MobileScannerController controller;
-  double _cutOutBottomOffset = 0;
+  double _currentZoom = 1.0;
+  double _startZoom = 1.0;
 
   @override
   void initState() {
     if (widget.setPortraitOrientation) {
+      // Set to portrait only
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
     }
     controller = widget.controller ?? MobileScannerController();
-    _cutOutBottomOffset = widget.cutOutBottomOffset;
     super.initState();
   }
 
@@ -207,127 +154,141 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
       controller.dispose();
     }
     widget.onDispose?.call();
-    if (widget.setPortraitOrientation) {
-      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: widget.appBarBuilder?.call(context, controller) ??
-          AppBar(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.cameraswitch_rounded),
-                onPressed: () => controller.switchCamera(),
-              ),
-              IconButton(
-                icon: controller.value.torchState == TorchState.on
-                    ? const Icon(Icons.flashlight_off_rounded)
-                    : const Icon(Icons.flashlight_on_rounded),
-                onPressed: () {
-                  controller.toggleTorch();
-                  setState(() {});
-                },
-              ),
-              if (!widget.hideGalleryIcon)
-                GalleryButton.icon(
-                  onImagePick: widget.onImagePick,
-                  onDetect: widget.onDetect,
-                  validator: widget.validator,
-                  controller: controller,
-                  isSuccess: _isSuccess,
-                ),
-              ...?widget.actions,
-            ],
-          ),
-      extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
-      bottomSheet: widget.bottomSheetBuilder?.call(context, controller) ??
-          DraggableSheet(
-            title: widget.sheetTitle,
-            hideDragHandler: widget.hideSheetDragHandler,
-            hideTitle: widget.hideSheetTitle,
-            child: widget.sheetChild,
-          ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            onDetect: onDetect,
-            controller: controller,
-            fit: widget.fit,
-            errorBuilder:
-                widget.errorBuilder ?? (_, __) => const ErrorBuilder(),
-            placeholderBuilder: widget.placeholderBuilder,
-            scanWindow: widget.scanWindow,
-            key: widget.key,
-            overlayBuilder: widget.overlayBuilder,
-            scanWindowUpdateThreshold: widget.scanWindowUpdateThreshold,
-          ),
-          ValueListenableBuilder<bool?>(
-            valueListenable: _isSuccess,
-            builder: (context, isSuccess, __) {
-              return widget.customOverlayBuilder
-                      ?.call(context, isSuccess, controller) ??
-                  Container(
-                    decoration: ShapeDecoration(
-                      shape: OverlayShape(
-                        borderRadius: widget.borderRadius,
-                        borderColor:
-                            ((isSuccess ?? false) && widget.showSuccess)
-                                ? widget.successColor
-                                : (!(isSuccess ?? true) && widget.showError)
-                                    ? widget.errorColor
-                                    : widget.borderColor ?? Colors.white,
-                        borderLength: widget.borderLength,
-                        borderWidth: widget.borderWidth,
-                        cutOutSize: widget.cutOutSize,
-                        cutOutBottomOffset: _cutOutBottomOffset,
-                        cutOutWidth: widget.cutOutWidth,
-                        cutOutHeight: widget.cutOutHeight,
-                        overlayColor:
-                            ((isSuccess ?? false) && widget.showSuccess)
-                                ? widget.successColor.withValues(alpha: 0.4)
-                                : (!(isSuccess ?? true) && widget.showError)
-                                    ? widget.errorColor.withValues(alpha: 0.4)
-                                    : widget.overlayColor,
-                      ),
-                    ),
-                  );
-            },
-          ),
-          if (!widget.hideGalleryButton)
-            Align(
-              alignment: widget.galleryButtonAlignment ??
-                  Alignment.lerp(
-                      Alignment.bottomCenter, Alignment.center, 0.75)!,
-              child: GalleryButton(
-                onImagePick: widget.onImagePick,
-                onDetect: widget.onDetect,
-                validator: widget.validator,
-                controller: controller,
-                isSuccess: _isSuccess,
-              ),
+    switch (UniversalPlatform.value) {
+      case UniversalPlatformType.Windows:
+      case UniversalPlatformType.Linux:
+      case UniversalPlatformType.Fuchsia:
+        return Scaffold(
+          appBar: widget.appBarBuilder?.call(context, controller),
+          body: Center(
+            child: SelectableText(
+              'This platform is not supported, for more information, please visit https://pub.dev/packages/mobile_scanner#platform-support',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-        ],
-      ),
-    );
+          ),
+        );
+      default:
+        return Scaffold(
+          appBar: widget.appBarBuilder?.call(context, controller) ??
+              CupertinoNavigationBar(
+                border: Border.all(color: Colors.transparent),
+                backgroundColor: CupertinoColors.systemFill,
+                trailing: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.cameraswitch_rounded),
+                      color: CupertinoColors.systemGrey6,
+                      onPressed: () => controller.switchCamera(),
+                    ),
+                    IconButton(
+                      icon: controller.value.torchState == TorchState.on
+                          ? const Icon(Icons.flashlight_off_rounded)
+                          : const Icon(Icons.flashlight_on_rounded),
+                      color: CupertinoColors.systemGrey6,
+                      onPressed: () {
+                        controller.toggleTorch();
+                        setState(() {});
+                      },
+                    ),
+                    if (!widget.hideGalleryIcon)
+                      GalleryButton.icon(
+                        onImagePick: widget.onImagePick,
+                        onDetect: widget.onDetect,
+                        validator: widget.validator,
+                        controller: controller,
+                        isSuccess: _isSuccess,
+                      ),
+                    ...?widget.actions,
+                  ],
+                ),
+              ),
+          extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
+          bottomSheet: widget.bottomSheetBuilder?.call(context, controller),
+          bottomNavigationBar: widget.bottomNavigationBarBuilder?.call(
+            context,
+            controller,
+          ),
+          body: GestureDetector(
+            onScaleStart: (details) {
+              _startZoom = _currentZoom;
+            },
+            onScaleUpdate: (details) {
+              double newZoom = (_startZoom * details.scale).clamp(1.0, 5.0);
+              if (newZoom != _currentZoom) {
+                setState(() => _currentZoom = newZoom);
+                controller.setZoomScale(_currentZoom);
+              }
+            },
+            child: Stack(
+              children: [
+                MobileScanner(
+                  onDetect: onDetect,
+                  controller: controller,
+                  fit: widget.fit,
+                  errorBuilder:
+                      widget.errorBuilder ?? (_, __) => const ErrorBuilder(),
+                  placeholderBuilder: widget.placeholderBuilder,
+                  scanWindow: widget.scanWindow,
+                  key: widget.key,
+                  overlayBuilder: widget.overlayBuilder,
+                  scanWindowUpdateThreshold: widget.scanWindowUpdateThreshold,
+                ),
+                ValueListenableBuilder<bool?>(
+                  valueListenable: _isSuccess,
+                  builder: (context, isSuccess, __) {
+                    return widget.customOverlayBuilder
+                            ?.call(context, isSuccess, controller) ??
+                        ScannerOverlay(
+                          config: widget.overlayConfig,
+                          isSuccess: isSuccess,
+                        );
+                  },
+                ),
+                if (!widget.hideGalleryButton)
+                  Align(
+                    alignment: widget.galleryButtonAlignment ??
+                        Alignment.lerp(
+                          Alignment.bottomCenter,
+                          Alignment.center,
+                          0.40,
+                        )!,
+                    child: GalleryButton(
+                      onImagePick: widget.onImagePick,
+                      onDetect: widget.onDetect,
+                      validator: widget.validator,
+                      controller: controller,
+                      isSuccess: _isSuccess,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+    }
   }
 
   void onDetect(BarcodeCapture barcodes) {
-    widget.onDetect?.call(barcodes);
-    if (widget.validator != null) {
-      final isValid = widget.validator!(barcodes);
-      _isSuccess.value = isValid;
-      if (!isValid) {
-        HapticFeedback.heavyImpact();
-      } else {
-        HapticFeedback.mediumImpact();
+    try {
+      widget.onDetect?.call(barcodes);
+      if (widget.validator != null) {
+        final isValid = widget.validator!(barcodes);
+        _isSuccess.value = isValid;
+        if (!isValid) {
+          HapticFeedback.heavyImpact();
+        } else {
+          HapticFeedback.mediumImpact();
+        }
       }
+    } catch (e) {
+      debugPrint(e.toString());
+      _isSuccess.value = false;
     }
   }
 }
