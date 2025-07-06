@@ -51,6 +51,18 @@ class _HomePageState extends State<HomePage> {
                       hideGalleryButton: false,
                       controller: MobileScannerController(
                         detectionSpeed: DetectionSpeed.noDuplicates,
+                        formats: [
+                          BarcodeFormat.qrCode,
+                          BarcodeFormat.code128,
+                          BarcodeFormat.code39,
+                          BarcodeFormat.ean13,
+                          BarcodeFormat.ean8,
+                          BarcodeFormat.upcA,
+                          BarcodeFormat.upcE,
+                          BarcodeFormat.pdf417,
+                          BarcodeFormat.dataMatrix,
+                          BarcodeFormat.aztec,
+                        ],
                       ),
                       onDetect: (BarcodeCapture capture) {
                         /// The row string scanned barcode value

@@ -18,7 +18,8 @@ class AiBarcodeScanner extends StatefulWidget {
   /// You can use your own custom overlay builder
   /// to build your own overlay
   /// This will override the default custom overlay
-  final Widget? Function(BuildContext, bool?, MobileScannerController)? customOverlayBuilder;
+  final Widget? Function(BuildContext, bool?, MobileScannerController)?
+      customOverlayBuilder;
 
   /// Overlay border color (default: white)
   final Color? borderColor;
@@ -64,24 +65,27 @@ class AiBarcodeScanner extends StatefulWidget {
   ///
   /// If this is null, defaults to a black [ColoredBox]
   /// with a centered white [Icons.error] icon.
-  final Widget Function(BuildContext, MobileScannerException, Widget?)? errorBuilder;
+  final Widget Function(BuildContext, MobileScannerException)? errorBuilder;
 
   /// The function that builds a placeholder widget when the scanner
   /// is not yet displaying its camera preview.
   ///
   /// If this is null, a black [ColoredBox] is used as placeholder.
-  final Widget Function(BuildContext, Widget?)? placeholderBuilder;
+  final Widget Function(BuildContext)? placeholderBuilder;
 
   /// Called when this object is removed from the tree permanently.
   final void Function()? onDispose;
 
   /// AppBar widget
   /// you can use this to add appBar to the scanner screen
-  final PreferredSizeWidget? Function(BuildContext context, MobileScannerController controller)? appBarBuilder;
+  final PreferredSizeWidget? Function(
+      BuildContext context, MobileScannerController controller)? appBarBuilder;
 
   /// The builder for the bottom sheet.
   /// This is displayed below the camera preview.
-  final Widget? Function(BuildContext context, MobileScannerController controller)? bottomSheetBuilder;
+  final Widget? Function(
+          BuildContext context, MobileScannerController controller)?
+      bottomSheetBuilder;
 
   /// The builder for the overlay above the camera preview.
   final LayoutWidgetBuilder? overlayBuilder;
@@ -96,6 +100,9 @@ class AiBarcodeScanner extends StatefulWidget {
   final bool Function(BarcodeCapture)? validator;
 
   final void Function(String?)? onImagePick;
+
+  /// The function that is called when a barcode is detected
+  final void Function(BarcodeCapture)? onDetect;
 
   /// Title for the draggable sheet (default: 'Scan any QR code')
   final String sheetTitle;
@@ -253,7 +260,8 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
             onDetect: onDetect,
             controller: controller,
             fit: widget.fit,
-            errorBuilder: widget.errorBuilder ?? (_, __, ___) => const ErrorBuilder(),
+            errorBuilder:
+                widget.errorBuilder ?? (_, __) => const ErrorBuilder(),
             placeholderBuilder: widget.placeholderBuilder,
             scanWindow: widget.scanWindow,
             key: widget.key,
@@ -263,27 +271,30 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
           ValueListenableBuilder<bool?>(
             valueListenable: _isSuccess,
             builder: (context, isSuccess, __) {
-              return widget.customOverlayBuilder?.call(context, isSuccess, controller) ??
+              return widget.customOverlayBuilder
+                      ?.call(context, isSuccess, controller) ??
                   Container(
                     decoration: ShapeDecoration(
                       shape: OverlayShape(
                         borderRadius: widget.borderRadius,
-                        borderColor: ((isSuccess ?? false) && widget.showSuccess)
-                            ? widget.successColor
-                            : (!(isSuccess ?? true) && widget.showError)
-                                ? widget.errorColor
-                                : widget.borderColor ?? Colors.white,
+                        borderColor:
+                            ((isSuccess ?? false) && widget.showSuccess)
+                                ? widget.successColor
+                                : (!(isSuccess ?? true) && widget.showError)
+                                    ? widget.errorColor
+                                    : widget.borderColor ?? Colors.white,
                         borderLength: widget.borderLength,
                         borderWidth: widget.borderWidth,
                         cutOutSize: widget.cutOutSize,
                         cutOutBottomOffset: _cutOutBottomOffset,
                         cutOutWidth: widget.cutOutWidth,
                         cutOutHeight: widget.cutOutHeight,
-                        overlayColor: ((isSuccess ?? false) && widget.showSuccess)
-                            ? widget.successColor.withOpacity(0.4)
-                            : (!(isSuccess ?? true) && widget.showError)
-                                ? widget.errorColor.withOpacity(0.4)
-                                : widget.overlayColor,
+                        overlayColor:
+                            ((isSuccess ?? false) && widget.showSuccess)
+                                ? widget.successColor.withValues(alpha: 0.4)
+                                : (!(isSuccess ?? true) && widget.showError)
+                                    ? widget.errorColor.withValues(alpha: 0.4)
+                                    : widget.overlayColor,
                       ),
                     ),
                   );
@@ -292,7 +303,8 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
           if (!widget.hideGalleryButton)
             Align(
               alignment: widget.galleryButtonAlignment ??
-                  Alignment.lerp(Alignment.bottomCenter, Alignment.center, 0.75)!,
+                  Alignment.lerp(
+                      Alignment.bottomCenter, Alignment.center, 0.75)!,
               child: GalleryButton(
                 onImagePick: widget.onImagePick,
                 onDetect: widget.onDetect,

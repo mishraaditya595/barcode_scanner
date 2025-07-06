@@ -11,8 +11,8 @@
      <td>Screenshot</td>
   </tr>
   <tr>
-<td><img src="https://raw.githubusercontent.com/mohesu/barcode_scanner/master/assets/final.gif" width=250 height=480 alt=""></td>
-<td><img src="https://raw.githubusercontent.com/mohesu/barcode_scanner/master/assets/final.PNG" width=250 height=480 alt=""></td>
+<td><img src="https://raw.githubusercontent.com/itsarvinddev/barcode_scanner/master/assets/final.gif" width=250 height=480 alt=""></td>
+<td><img src="https://raw.githubusercontent.com/itsarvinddev/barcode_scanner/master/assets/final.PNG" width=250 height=480 alt=""></td>
 </tr>
 </table>
 
@@ -101,6 +101,38 @@ Import `package:ai_barcode_scanner/ai_barcode_scanner.dart`, and use the widget 
 If you don't provide a controller, you can't control functions like the torch(flash) or switching camera.
 
 If you don't set `detectionSpeed: DetectionSpeed.noDuplicates`, you can get multiple scans in a very short time.
+
+## Supported Barcode Formats
+
+This package supports all barcode formats available in the `mobile_scanner` package:
+
+- **QR Code** (`BarcodeFormat.qrCode`)
+- **Code 128** (`BarcodeFormat.code128`)
+- **Code 39** (`BarcodeFormat.code39`)
+- **Code 93** (`BarcodeFormat.code93`)
+- **Codabar** (`BarcodeFormat.codabar`)
+- **Data Matrix** (`BarcodeFormat.dataMatrix`)
+- **EAN-13** (`BarcodeFormat.ean13`)
+- **EAN-8** (`BarcodeFormat.ean8`)
+- **ITF** (`BarcodeFormat.itf`)
+- **UPC-A** (`BarcodeFormat.upcA`)
+- **UPC-E** (`BarcodeFormat.upcE`)
+- **PDF417** (`BarcodeFormat.pdf417`) - 2D barcode format
+- **AZTEC** (`BarcodeFormat.aztec`)
+
+To configure specific formats, use the `formats` parameter in `MobileScannerController`:
+
+```dart
+controller: MobileScannerController(
+  detectionSpeed: DetectionSpeed.noDuplicates,
+  formats: [
+    BarcodeFormat.qrCode,
+    BarcodeFormat.code128,
+    BarcodeFormat.pdf417, // PDF417 support
+    BarcodeFormat.dataMatrix,
+  ],
+),
+```
 
 ```dart
 import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';

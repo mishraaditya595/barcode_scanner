@@ -1,3 +1,10 @@
+## 7.0.1
+
+**Improvements:**
+- Added comprehensive documentation for supported barcode formats including PDF417
+- Updated example to demonstrate PDF417 format configuration
+- Enhanced README with format configuration examples
+
 ## 6.0.1
 
 **BREAKING CHANGES BY [MOBILE_SCANNER](https://pub.dev/packages/mobile_scanner):**
