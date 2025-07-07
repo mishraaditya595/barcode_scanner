@@ -3,12 +3,12 @@
 <p>
   <a href="https://pub.dev/packages/ai_barcode_scanner"><img src="https://img.shields.io/pub/v/ai_barcode_scanner.svg" alt="Pub Version"></a>
   <a href="https://github.com/sponsors/juliansteenbakker"><img src="https://img.shields.io/github/sponsors/juliansteenbakker?label=Sponsor%20mobile_scanner" alt="Sponsor"></a>
-  <a href="https://github.com/itsarvinddev/barcode_scanner/blob/main/LICENSE"><img src="https://img.shields.io/github/license/itsarvinddev/barcode_scanner" alt="License"></a>
+  <a href="https://github.com/itsarvinddev/barcode_scanner/blob/master/LICENSE"><img src="https://img.shields.io/github/license/itsarvinddev/barcode_scanner" alt="License"></a>
 </p>
 
 A powerful and customizable barcode scanner for Flutter, built on top of the excellent `mobile_scanner` package. This widget provides a complete, ready-to-use screen for all your barcode scanning needs, with a beautiful and modern UI.
 
-> **Screenshots**: [AI Barcode Scanner](https://github.com/itsarvinddev/barcode_scanner/blob/main/assets/)
+> **Screenshots**: [AI Barcode Scanner](https://github.com/itsarvinddev/barcode_scanner/blob/master/assets/)
 
 <img src="https://raw.githubusercontent.com/itsarvinddev/barcode_scanner/master/assets/ai_barcode_scanner.png" alt="">
 
