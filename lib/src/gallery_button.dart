@@ -19,6 +19,7 @@ class GalleryButton extends StatelessWidget {
   final ValueNotifier<bool?> isSuccess;
   final GalleryButtonType buttonType;
   final String text;
+  final IconData? icon;
 
   const GalleryButton({
     super.key,
@@ -29,6 +30,7 @@ class GalleryButton extends StatelessWidget {
     required this.isSuccess,
     this.buttonType = GalleryButtonType.filled,
     this.text = 'Upload from gallery',
+    this.icon,
   });
 
   const GalleryButton.icon({
@@ -39,6 +41,7 @@ class GalleryButton extends StatelessWidget {
     required this.controller,
     required this.isSuccess,
     this.text = 'Upload from gallery',
+    this.icon = CupertinoIcons.photo,
   }) : buttonType = GalleryButtonType.icon;
 
   /// REFACTORED: The logic for picking and analyzing the image is now cleaner.
@@ -81,14 +84,14 @@ class GalleryButton extends StatelessWidget {
             backgroundColor: CupertinoColors.systemGrey6,
             foregroundColor: CupertinoColors.darkBackgroundGray,
           ),
-          icon: const Icon(CupertinoIcons.photo),
+          icon: Icon(icon),
           onPressed: _pickAndAnalyzeImage,
         );
       case GalleryButtonType.filled:
         return FilledButton.icon(
           onPressed: _pickAndAnalyzeImage,
           label: Text(text),
-          icon: const Icon(CupertinoIcons.photo),
+          icon: Icon(icon),
           style: FilledButton.styleFrom(
             backgroundColor: CupertinoColors.systemGrey6,
             foregroundColor: CupertinoColors.darkBackgroundGray,
