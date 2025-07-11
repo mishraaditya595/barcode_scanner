@@ -103,6 +103,18 @@ class AiBarcodeScanner extends StatefulWidget {
   /// Configuration for the scanner overlay (lines, borders, colors).
   final ScannerOverlayConfig overlayConfig;
 
+  /// Custom icon for the gallery button
+  final IconData galleryIcon;
+
+  /// Custom icon for the camera switch button
+  final IconData cameraSwitchIcon;
+
+  /// Custom icon for the flashlight when on
+  final IconData flashOnIcon;
+
+  /// Custom icon for the flashlight when off
+  final IconData flashOffIcon;
+
   const AiBarcodeScanner({
     super.key,
     this.fit = BoxFit.cover,
@@ -128,6 +140,10 @@ class AiBarcodeScanner extends StatefulWidget {
     this.setPortraitOrientation = true,
     this.overlayConfig = const ScannerOverlayConfig(),
     this.galleryButtonText = 'Upload from gallery',
+    this.galleryIcon = CupertinoIcons.photo,
+    this.cameraSwitchIcon = CupertinoIcons.arrow_2_circlepath,
+    this.flashOnIcon = CupertinoIcons.bolt_fill,
+    this.flashOffIcon = CupertinoIcons.bolt,
   });
 
   @override
@@ -225,7 +241,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
           backgroundColor: CupertinoColors.systemGrey6,
           foregroundColor: CupertinoColors.darkBackgroundGray,
         ),
-        icon: const Icon(CupertinoIcons.arrow_2_circlepath),
+        icon: Icon(widget.cameraSwitchIcon),
         onPressed: () => _controller.switchCamera(),
       ),
       IconButton.filled(
@@ -235,7 +251,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
               : CupertinoColors.systemGrey6,
           foregroundColor: CupertinoColors.darkBackgroundGray,
         ),
-        icon: const Icon(CupertinoIcons.bolt),
+        icon: Icon(isTorchOn ? widget.flashOnIcon : widget.flashOffIcon),
         onPressed: () {
           _controller.toggleTorch();
           setState(() {});
@@ -335,6 +351,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
                       controller: _controller,
                       isSuccess: _isSuccess,
                       text: widget.galleryButtonText,
+                      icon: widget.galleryIcon,
                     ),
                     const SizedBox(width: 4),
                     ...actionIcons,
