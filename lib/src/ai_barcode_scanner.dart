@@ -115,6 +115,11 @@ class AiBarcodeScanner extends StatefulWidget {
   /// Custom icon for the flashlight when off
   final IconData flashOffIcon;
 
+  /// Whether to return the raw image data (Uint8List) along with the BarcodeCapture.
+  /// This can be useful for post-scan image processing such as color analysis or saving the frame.
+  /// Defaults to `false`.
+  final bool returnImage;
+
   const AiBarcodeScanner({
     super.key,
     this.fit = BoxFit.cover,
@@ -144,6 +149,7 @@ class AiBarcodeScanner extends StatefulWidget {
     this.cameraSwitchIcon = CupertinoIcons.arrow_2_circlepath,
     this.flashOnIcon = CupertinoIcons.bolt_fill,
     this.flashOffIcon = CupertinoIcons.bolt,
+    this.returnImage = false,
   });
 
   @override
@@ -168,7 +174,10 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
         DeviceOrientation.portraitDown,
       ]);
     }
-    _controller = widget.controller ?? MobileScannerController();
+    _controller = widget.controller ?? MobileScannerController(
+      // Passes the returnImage flag to control whether frame images are returned with barcode data
+      returnImage: widget.returnImage,
+    );
   }
 
   @override
