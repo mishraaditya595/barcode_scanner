@@ -22,7 +22,7 @@
 - Added platform support limitations documentation
 - Enhanced usage examples with best practices
 - Added known limitations section for dependency-related issues
-- [Major changes in AiBarcodeScanner class with new parameters and ui improvements, read the migration guide for more details](https://github.com/itsarvinddev/barcode_scanner/blob/main/MIGRATION_GUIDE.md).
+- [Major changes in AiBarcodeScanner class with new parameters and ui improvements, read the migration guide for more details](https://github.com/itsarvinddev/barcode_scanner/blob/master/MIGRATION_GUIDE.md).
 
 ## 6.0.1
 
