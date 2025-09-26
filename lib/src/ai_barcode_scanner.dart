@@ -317,9 +317,9 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
               onDetect: _onDetect,
               fit: widget.fit,
               scanWindow: scanWindow,
-              errorBuilder: widget.errorBuilder ??
-                  (context, error) => ErrorBuilder(error: error),
-              placeholderBuilder: widget.placeholderBuilder,
+              // errorBuilder: widget.errorBuilder ??
+              //     (context, error) => ErrorBuilder(error: error),
+              // placeholderBuilder: widget.placeholderBuilder,
               scanWindowUpdateThreshold: widget.scanWindowUpdateThreshold,
               overlayBuilder: (context, overlay) =>
                   ValueListenableBuilder<bool?>(
@@ -339,7 +339,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
                   (error, stackTrace) {
                     debugPrint('Error during barcode detection: $error');
                   },
-              useAppLifecycleState: widget.useAppLifecycleState,
+              // useAppLifecycleState: widget.useAppLifecycleState,
             ),
             if (widget.galleryButtonType == GalleryButtonType.filled)
               Align(
