@@ -284,8 +284,7 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
               //   ),
               //   ...actionIcons,
               // ],
-              ...?
-              widget.actions,
+             actionIcons as Widget
             ],
           ),
       extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
