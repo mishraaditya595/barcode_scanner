@@ -82,8 +82,8 @@ class AiBarcodeScanner extends StatefulWidget {
   /// The primary callback function that is called when a barcode is detected.
   final void Function(BarcodeCapture)? onDetect;
 
-  /// The type of gallery button to use.
-  final GalleryButtonType galleryButtonType;
+  // /// The type of gallery button to use.
+  // final GalleryButtonType galleryButtonType;
 
   /// Whether the body of the scaffold should extend behind the app bar. Defaults to `true`.
   final bool extendBodyBehindAppBar;
@@ -136,7 +136,7 @@ class AiBarcodeScanner extends StatefulWidget {
     this.onDetect,
     this.validator,
     this.onImagePick,
-    this.galleryButtonType = GalleryButtonType.filled,
+    // this.galleryButtonType = GalleryButtonType.filled,
     this.bottomSheetBuilder,
     this.bottomNavigationBarBuilder,
     this.extendBodyBehindAppBar = true,
