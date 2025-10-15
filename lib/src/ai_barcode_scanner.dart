@@ -273,18 +273,19 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
           AppBar(
             backgroundColor: Colors.transparent,
             actions: [
-              if (widget.galleryButtonType == GalleryButtonType.icon) ...[
-                GalleryButton.icon(
-                  onImagePick: widget.onImagePick,
-                  onDetect: widget.onDetect,
-                  validator: widget.validator,
-                  controller: _controller,
-                  isSuccess: _isSuccess,
-                  text: widget.galleryButtonText,
-                ),
-                ...actionIcons,
-              ],
-              ...?widget.actions,
+              // if (widget.galleryButtonType == GalleryButtonType.icon) ...[
+              //   GalleryButton.icon(
+              //     onImagePick: widget.onImagePick,
+              //     onDetect: widget.onDetect,
+              //     validator: widget.validator,
+              //     controller: _controller,
+              //     isSuccess: _isSuccess,
+              //     text: widget.galleryButtonText,
+              //   ),
+              //   ...actionIcons,
+              // ],
+              ...?
+              widget.actions,
             ],
           ),
       extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
@@ -341,32 +342,32 @@ class _AiBarcodeScannerState extends State<AiBarcodeScanner> {
                   },
               // useAppLifecycleState: widget.useAppLifecycleState,
             ),
-            if (widget.galleryButtonType == GalleryButtonType.filled)
-              Align(
-                alignment: widget.galleryButtonAlignment ??
-                    Alignment.lerp(
-                      Alignment.bottomCenter,
-                      Alignment.center,
-                      0.42,
-                    )!,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GalleryButton(
-                      onImagePick: widget.onImagePick,
-                      onDetect: widget.onDetect,
-                      validator: widget.validator,
-                      controller: _controller,
-                      isSuccess: _isSuccess,
-                      text: widget.galleryButtonText,
-                      icon: widget.galleryIcon,
-                    ),
-                    const SizedBox(width: 4),
-                    ...actionIcons,
-                  ],
-                ),
-              ),
+            // if (widget.galleryButtonType == GalleryButtonType.filled)
+            //   Align(
+            //     alignment: widget.galleryButtonAlignment ??
+            //         Alignment.lerp(
+            //           Alignment.bottomCenter,
+            //           Alignment.center,
+            //           0.42,
+            //         )!,
+            //     child: Row(
+            //       mainAxisAlignment: MainAxisAlignment.center,
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: [
+            //         GalleryButton(
+            //           onImagePick: widget.onImagePick,
+            //           onDetect: widget.onDetect,
+            //           validator: widget.validator,
+            //           controller: _controller,
+            //           isSuccess: _isSuccess,
+            //           text: widget.galleryButtonText,
+            //           icon: widget.galleryIcon,
+            //         ),
+            //         const SizedBox(width: 4),
+            //         ...actionIcons,
+            //       ],
+            //     ),
+            //   ),
           ],
         ),
       ),
